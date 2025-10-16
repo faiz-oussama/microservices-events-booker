@@ -1,0 +1,56 @@
+# Staging environment values
+global:
+  image:
+    tag: "latest"
+    pullPolicy: Always
+
+environment: staging
+
+# Medium resource requirements for staging
+discoveryService:
+  image:
+    repository: your-dockerhub-username/ticketing-discovery-service
+    tag: ""
+  replicas: 1
+
+apiGateway:
+  image:
+    repository: your-dockerhub-username/ticketing-api-gateway
+    tag: ""
+  replicas: 2
+
+authService:
+  image:
+    repository: your-dockerhub-username/ticketing-auth-service
+    tag: ""
+  replicas: 2
+
+ticketService:
+  image:
+    repository: your-dockerhub-username/ticketing-ticket-service
+    tag: ""
+  replicas: 2
+
+eventService:
+  image:
+    repository: your-dockerhub-username/ticketing-event-service
+    tag: ""
+  replicas: 2
+
+bookingService:
+  image:
+    repository: your-dockerhub-username/ticketing-booking-service
+    tag: ""
+  replicas: 2
+
+postgresql:
+  enabled: true
+  auth:
+    username: admin
+    password: admin123
+    database: ticketing
+  architecture: standalone
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi

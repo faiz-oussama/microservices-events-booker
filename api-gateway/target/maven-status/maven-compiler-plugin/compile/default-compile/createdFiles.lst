@@ -1,0 +1,4 @@
+com\ticketing\apigateway\client\AuthServiceClient$UserDTO.class
+com\ticketing\apigateway\filter\JwtAuthenticationFilter.class
+com\ticketing\apigateway\ApiGatewayApplication.class
+com\ticketing\apigateway\client\AuthServiceClient.class

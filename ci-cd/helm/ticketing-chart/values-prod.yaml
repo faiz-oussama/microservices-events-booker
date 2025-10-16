@@ -1,0 +1,60 @@
+# Production environment values
+global:
+  image:
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+environment: prod
+
+# High availability and performance for production
+discoveryService:
+  image:
+    repository: your-dockerhub-username/ticketing-discovery-service
+    tag: ""
+  replicas: 2
+
+apiGateway:
+  image:
+    repository: your-dockerhub-username/ticketing-api-gateway
+    tag: ""
+  replicas: 3
+
+authService:
+  image:
+    repository: your-dockerhub-username/ticketing-auth-service
+    tag: ""
+  replicas: 3
+
+ticketService:
+  image:
+    repository: your-dockerhub-username/ticketing-ticket-service
+    tag: ""
+  replicas: 3
+
+eventService:
+  image:
+    repository: your-dockerhub-username/ticketing-event-service
+    tag: ""
+  replicas: 3
+
+bookingService:
+  image:
+    repository: your-dockerhub-username/ticketing-booking-service
+    tag: ""
+  replicas: 3
+
+postgresql:
+  enabled: true
+  auth:
+    username: admin
+    password: admin123
+    database: ticketing
+  architecture: replication
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+  readReplicas:
+    persistence:
+      enabled: true
+      size: 50Gi

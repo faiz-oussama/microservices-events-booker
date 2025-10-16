@@ -1,0 +1,10 @@
+com\ticketing\bookingservice\client\TicketServiceClient$TicketDTO.class
+com\ticketing\bookingservice\controller\BookingController.class
+com\ticketing\bookingservice\dto\BookingCreateDTO.class
+com\ticketing\bookingservice\dto\BookingDTO.class
+com\ticketing\bookingservice\client\AuthServiceClient.class
+com\ticketing\bookingservice\model\Booking.class
+com\ticketing\bookingservice\service\BookingService.class
+com\ticketing\bookingservice\client\TicketServiceClient.class
+com\ticketing\bookingservice\repository\BookingRepository.class
+com\ticketing\bookingservice\BookingServiceApplication.class

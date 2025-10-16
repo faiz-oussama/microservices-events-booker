@@ -1,0 +1,203 @@
+version: '3.9'
+
+services:
+  # Discovery Service
+  discovery-service:
+    build:
+      context: ./discovery-service
+      dockerfile: Dockerfile
+    container_name: discovery-service
+    restart: always
+    ports:
+      - "8761:8761"
+
+  # Databases
+  auth-db:
+    image: postgres:15
+    container_name: auth-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: authdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth_pgdata:/var/lib/postgresql/data
+    networks:
+      - ticketing-network
+
+  ticket-db:
+    image: postgres:15
+    container_name: ticket-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: ticketdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - ticket_pgdata:/var/lib/postgresql/data
+    networks:
+      - ticketing-network
+
+  event-db:
+    image: postgres:15
+    container_name: event-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: eventdb
+    ports:
+      - "5435:5432"
+    volumes:
+      - event_pgdata:/var/lib/postgresql/data
+    networks:
+      - ticketing-network
+
+  booking-db:
+    image: postgres:15
+    container_name: booking-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: bookingdb
+    ports:
+      - "5436:5432"
+    volumes:
+      - booking_pgdata:/var/lib/postgresql/data
+    networks:
+      - ticketing-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    restart: always
+    depends_on:
+      - discovery-service
+    ports:
+      - "8084:8084"
+    networks:
+      - ticketing-network
+
+  # Services
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: always
+    depends_on:
+      - auth-db
+      - discovery-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/authdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    ports:
+      - "8080:8080"
+    networks:
+      - ticketing-network
+
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: ticket-service
+    restart: always
+    depends_on:
+      - ticket-db
+      - discovery-service
+      - auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-db:5432/ticketdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    ports:
+      - "8082:8080"
+    networks:
+      - ticketing-network
+
+  event-service:
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
+    container_name: event-service
+    restart: always
+    depends_on:
+      - event-db
+      - discovery-service
+      - auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://event-db:5432/eventdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    ports:
+      - "8083:8080"
+    networks:
+      - ticketing-network
+
+  booking-service:
+    build:
+      context: ./booking-service
+      dockerfile: Dockerfile
+    container_name: booking-service
+    restart: always
+    depends_on:
+      - booking-db
+      - discovery-service
+      - auth-service
+      - ticket-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://booking-db:5432/bookingdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    ports:
+      - "8084:8080"
+    networks:
+      - ticketing-network
+
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - auth-db
+      - ticket-db
+      - event-db
+      - booking-db
+    ports:
+      - "8081:8080"
+    networks:
+      - ticketing-network
+
+networks:
+  ticketing-network:
+    driver: bridge
+
+volumes:
+  auth_pgdata:
+  ticket_pgdata:
+  event_pgdata:
+  booking_pgdata:

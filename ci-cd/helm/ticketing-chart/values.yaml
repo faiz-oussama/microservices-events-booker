@@ -1,0 +1,63 @@
+# Global values
+global:
+  image:
+    tag: "latest"
+    pullPolicy: Always
+
+# Environment
+environment: dev
+
+# Discovery Service
+discoveryService:
+  image:
+    repository: your-dockerhub-username/ticketing-discovery-service
+    tag: ""
+  replicas: 1
+
+# API Gateway
+apiGateway:
+  image:
+    repository: your-dockerhub-username/ticketing-api-gateway
+    tag: ""
+  replicas: 2
+
+# Auth Service
+authService:
+  image:
+    repository: your-dockerhub-username/ticketing-auth-service
+    tag: ""
+  replicas: 2
+
+# Ticket Service
+ticketService:
+  image:
+    repository: your-dockerhub-username/ticketing-ticket-service
+    tag: ""
+  replicas: 2
+
+# Event Service
+eventService:
+  image:
+    repository: your-dockerhub-username/ticketing-event-service
+    tag: ""
+  replicas: 2
+
+# Booking Service
+bookingService:
+  image:
+    repository: your-dockerhub-username/ticketing-booking-service
+    tag: ""
+  replicas: 2
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  auth:
+    username: admin
+    password: admin123
+    database: ticketing
+  architecture: standalone
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi

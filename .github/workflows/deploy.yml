@@ -1,0 +1,76 @@
+name: Deploy to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Choose environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      service:
+        description: 'Service to deploy (leave empty for all)'
+        required: false
+        type: string
+
+env:
+  HELM_VERSION: v3.14.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure Kubernetes context
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
+
+      - name: Verify cluster connection
+        run: kubectl cluster-info
+
+      - name: Deploy via Helm
+        run: |
+          cd ci-cd/helm/ticketing-chart
+          if [ -n "${{ github.event.inputs.service }}" ]; then
+            # Deploy specific service
+            helm upgrade --install ${{ github.event.inputs.service }} . \
+              --namespace=${{ github.event.inputs.environment }} \
+              --values=values-${{ github.event.inputs.environment }}.yaml \
+              --set ${{ github.event.inputs.service }}.image.tag=${GITHUB_SHA::8} \
+              --wait --timeout=10m
+          else
+            # Deploy all services
+            helm upgrade --install ticketing . \
+              --namespace=${{ github.event.inputs.environment }} \
+              --values=values-${{ github.event.inputs.environment }}.yaml \
+              --set global.image.tag=${GITHUB_SHA::8} \
+              --wait --timeout=15m
+          fi
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n ${{ github.event.inputs.environment }}
+          kubectl get services -n ${{ github.event.inputs.environment }}
+
+      - name: Run smoke tests
+        run: |
+          # Wait for services to be ready
+          kubectl wait --for=condition=available --timeout=300s deployment -n ${{ github.event.inputs.environment }} --all
+          # Basic health check
+          echo "Deployment completed successfully"
