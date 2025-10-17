@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -90,6 +91,7 @@ public class BookingController {
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<BookingDTO>> getBookingsByStatus(@PathVariable String status) {
         log.info("Received request to get bookings with status: {}", status);
         try {
@@ -102,6 +104,7 @@ public class BookingController {
     }
 
     @PostMapping("/process-expired")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> processExpiredReservations() {
         log.info("Received request to process expired reservations");
         try {

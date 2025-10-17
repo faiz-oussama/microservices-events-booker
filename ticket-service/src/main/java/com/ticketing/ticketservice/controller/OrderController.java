@@ -3,6 +3,7 @@ package com.ticketing.ticketservice.controller;
 import com.ticketing.ticketservice.model.Order;
 import com.ticketing.ticketservice.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +16,7 @@ public class OrderController {
     private OrderService orderService;
     
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<Order> getAllOrders() {
         return orderService.getAllOrders();
     }

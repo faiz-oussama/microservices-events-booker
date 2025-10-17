@@ -42,8 +42,18 @@ public class AuthService {
                 )
         );
 
-        // Generate JWT
-        String token = jwtUtil.generateToken(String.valueOf(authentication));
+        // Get user details
+        User user = userRepository.findByUsername(loginRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Generate JWT with user details including role
+        String token = jwtUtil.generateToken(
+                user.getUsername(),
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getRole().getRoleType().toString()
+        );
         return new LoginResponse(token);
     }
 

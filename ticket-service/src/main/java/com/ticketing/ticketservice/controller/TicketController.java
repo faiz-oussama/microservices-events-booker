@@ -3,6 +3,7 @@ package com.ticketing.ticketservice.controller;
 import com.ticketing.ticketservice.model.Ticket;
 import com.ticketing.ticketservice.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,16 +26,19 @@ public class TicketController {
     }
     
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Ticket createTicket(@RequestBody Ticket ticket) {
         return ticketService.createTicket(ticket);
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Ticket updateTicket(@PathVariable Long id, @RequestBody Ticket ticketDetails) {
         return ticketService.updateTicket(id, ticketDetails);
     }
     
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteTicket(@PathVariable Long id) {
         ticketService.deleteTicket(id);
     }

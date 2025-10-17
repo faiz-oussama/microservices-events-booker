@@ -1,6 +1,6 @@
 package com.ticketing.apigateway.filter;
 
-import com.ticketing.apigateway.client.AuthServiceClient;
+import com.ticketing.apigateway.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-    private final AuthServiceClient authServiceClient;
+    private final JwtUtil jwtUtil;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -37,23 +37,31 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         try {
-            AuthServiceClient.UserDTO user = authServiceClient.validateToken(authHeader);
+            String token = authHeader.substring(7);
 
-            if (user == null) {
-                log.warn("Invalid JWT token for path: {}", path);
+            // Validate token locally
+            if (!jwtUtil.validateToken(token) || jwtUtil.isTokenExpired(token)) {
+                log.warn("Invalid or expired JWT token for path: {}", path);
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();
             }
 
+            // Extract user info from token
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            String username = jwtUtil.getUsernameFromToken(token);
+            String email = jwtUtil.getEmailFromToken(token);
+            String fullName = jwtUtil.getFullNameFromToken(token);
+            String role = jwtUtil.getRoleFromToken(token);
+
             ServerHttpRequest modifiedRequest = request.mutate()
-                    .header("X-User-Id", String.valueOf(user.id()))
-                    .header("X-User-Username", user.username())
-                    .header("X-User-Email", user.email())
-                    .header("X-User-FullName", user.fullName())
-                    .header("X-User-Role", user.role())
+                    .header("X-User-Id", String.valueOf(userId))
+                    .header("X-User-Username", username)
+                    .header("X-User-Email", email)
+                    .header("X-User-FullName", fullName)
+                    .header("X-User-Role", role)
                     .build();
 
-            log.info("JWT validation successful for user: {} accessing: {}", user.username(), path);
+            log.info("JWT validation successful for user: {} accessing: {}", username, path);
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
@@ -66,6 +74,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1; // Execute before other filters
+        return -1;
     }
 }

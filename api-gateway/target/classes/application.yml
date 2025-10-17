@@ -44,6 +44,10 @@ eureka:
   instance:
     prefer-ip-address: true
 
+# JWT Configuration
+jwt:
+  secret: mySecretKeyForJWTTokenGenerationWhichShouldBeStoredInEnvironmentVariablesInProduction
+
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG

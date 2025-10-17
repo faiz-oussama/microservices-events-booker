@@ -1,4 +1,4 @@
-package com.ticketing.authservice.utils;
+package com.ticketing.apigateway.utils;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -15,24 +15,8 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expirationMs}")
-    private long expiration;
-
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
-    }
-
-    public String generateToken(String username, Long userId, String email, String fullName, String role) {
-        return Jwts.builder()
-                .subject(username)
-                .claim("userId", userId)
-                .claim("email", email)
-                .claim("fullName", fullName)
-                .claim("role", role)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey())
-                .compact();
     }
 
     public String getUsernameFromToken(String token) {
