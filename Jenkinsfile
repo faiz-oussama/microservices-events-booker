@@ -33,7 +33,7 @@ pipeline {
                         steps {
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                 dir("${SERVICE}") {
-                                    bat 'mvn clean compile -DskipTests'  // Use bat for Windows
+                                    sh 'mvn clean compile -DskipTests'  
                                 }
                             }
                         }
@@ -43,7 +43,7 @@ pipeline {
                             catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                                 timeout(time: env.TEST_TIMEOUT.toInteger(), unit: 'MINUTES') {
                                     dir("${SERVICE}") {
-                                        bat 'mvn test'  // Use bat for Windows
+                                        sh 'mvn test' 
                                     }
                                 }
                             }
@@ -53,7 +53,7 @@ pipeline {
                         steps {
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                 dir("${SERVICE}") {
-                                    bat 'mvn package -DskipTests'  // Use bat for Windows
+                                    sh 'mvn package -DskipTests' 
                                 }
                             }
                         }
@@ -77,7 +77,7 @@ pipeline {
                                 timeout(time: env.BUILD_TIMEOUT.toInteger(), unit: 'MINUTES') {
                                     script {
                                         def imageTag = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(8)}"
-                                        bat """
+                                        sh """
                                             docker build -t ${DOCKERHUB_CREDENTIALS_USR}/${IMAGE_PREFIX}-${SERVICE}:${imageTag} ./${SERVICE}
                                             docker tag ${DOCKERHUB_CREDENTIALS_USR}/${IMAGE_PREFIX}-${SERVICE}:${imageTag} ${DOCKERHUB_CREDENTIALS_USR}/${IMAGE_PREFIX}-${SERVICE}:latest
                                         """
@@ -89,7 +89,7 @@ pipeline {
                     stage('Push Docker ${SERVICE}') {
                         steps {
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                                bat """
+                                sh """
                                     echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
                                     docker push ${DOCKERHUB_CREDENTIALS_USR}/${IMAGE_PREFIX}-${SERVICE}:${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(8)}
                                     docker push ${DOCKERHUB_CREDENTIALS_USR}/${IMAGE_PREFIX}-${SERVICE}:latest
@@ -106,7 +106,7 @@ pipeline {
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                     timeout(time: env.DEPLOY_TIMEOUT.toInteger(), unit: 'MINUTES') {
                         script {
-                            bat """
+                            sh """
                                 docker-compose down -v
                                 docker-compose up -d
                                 timeout /t 60 /nobreak > nul
@@ -125,7 +125,7 @@ pipeline {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     script {
-                        bat """
+                        sh """
                             echo "Running integration tests..."
                             # Add your integration test commands here
                             # For example: mvn test -Dtest=IntegrationTest
@@ -139,7 +139,7 @@ pipeline {
 
     post {
         always {
-            bat '''
+            sh '''
                 docker-compose down -v || true
                 docker system prune -f || true
             '''
@@ -172,7 +172,7 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed!'
-            bat 'docker-compose logs || true'
+            sh 'docker-compose logs || true'
             script {
                 echo "Build #${env.BUILD_NUMBER} failed!"
                 echo "Check the logs above for details."
