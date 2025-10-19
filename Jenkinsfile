@@ -1,11 +1,14 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'maven:3.9.6-eclipse-temurin-17'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
-        JAVA_HOME = tool name: 'JDK17', type: 'jdk'
-        PATH = "${JAVA_HOME}/bin:${PATH}"
         DOCKER_REGISTRY = 'docker.io'
         IMAGE_PREFIX = 'ticketing'
         BUILD_TIMEOUT = '30'
@@ -109,7 +112,7 @@ pipeline {
                             sh """
                                 docker-compose down -v
                                 docker-compose up -d
-                                timeout /t 60 /nobreak > nul
+                                sleep 60
                                 docker-compose ps
                                 echo "Testing API Gateway health check..."
                                 curl -f http://localhost:8080/actuator/health || echo "Health check failed"
@@ -139,12 +142,12 @@ pipeline {
 
     post {
         always {
-            sh '''
-                docker-compose down -v || true
-                docker system prune -f || true
-            '''
-            cleanWs()
             script {
+                sh '''
+                    docker-compose down -v || true
+                    docker system prune -f || true
+                '''
+                cleanWs()
                 def buildStatus = currentBuild.currentResult
                 def subject = "Jenkins Build ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
                 def body = """
@@ -172,10 +175,10 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed!'
-            sh 'docker-compose logs || true'
             script {
-                echo "Build #${env.BUILD_NUMBER} failed!"
-                echo "Check the logs above for details."
+                sh 'docker-compose logs || true'
+                echo "❌ Build #${env.BUILD_NUMBER} failed!"
+                echo "🔍 Check the logs above for details."
             }
         }
         unstable {
