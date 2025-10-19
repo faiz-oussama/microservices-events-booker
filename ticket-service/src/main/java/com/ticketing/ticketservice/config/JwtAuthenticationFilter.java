@@ -2,11 +2,14 @@ package com.ticketing.ticketservice.config;
 
 import com.ticketing.ticketservice.client.AuthServiceClient;
 import com.ticketing.ticketservice.dto.UserDTO;
+
+import org.springframework.lang.NonNull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,16 +28,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AuthServiceClient authServiceClient;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
             try {
-                // Call auth-service to validate token and return user info
                 UserDTO userDTO = authServiceClient.validateToken("Bearer " + token);
 
                 if (userDTO != null) {

@@ -2,6 +2,37 @@ version: '3.9'
 
 services:
 
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    privileged: true
+    user: root
+    ports:
+      - "9090:8080"
+      - "50000:50000"
+    container_name: jenkins
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home:/var/jenkins_home
+    environment:
+      - DOCKER_HOST=tcp://docker:2376
+    networks:
+      - ticketing-network
+    depends_on:
+      - docker
+
+  docker:
+    image: docker:dind
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+    volumes:
+      - docker_certs:/certs/client
+      - jenkins_home:/var/jenkins_home
+    networks:
+      - ticketing-network
+
   discovery-service:
     build:
       context: ./discovery-service
@@ -195,3 +226,5 @@ volumes:
   ticket_pgdata:
   event_pgdata:
   booking_pgdata:
+  jenkins_home:
+  docker_certs:
