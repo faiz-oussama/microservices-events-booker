@@ -1,19 +1,13 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-17'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
-        DOCKER_REGISTRY = 'docker.io'
         IMAGE_PREFIX = 'ticketing'
         BUILD_TIMEOUT = '30'
         TEST_TIMEOUT = '15'
         DEPLOY_TIMEOUT = '60'
+        MAVEN_IMAGE = 'maven:3.9.6-eclipse-temurin-17'
     }
 
     stages {
@@ -36,27 +30,41 @@ pipeline {
                         steps {
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                 dir("${SERVICE}") {
-                                    sh 'mvn clean compile -DskipTests'  
-                                }
-                            }
-                        }
-                    }
-                    stage('Test ${SERVICE}') {
-                        steps {
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                                timeout(time: env.TEST_TIMEOUT.toInteger(), unit: 'MINUTES') {
-                                    dir("${SERVICE}") {
-                                        sh 'mvn test' 
+                                    script {
+                                        docker.image(env.MAVEN_IMAGE).inside('-v $HOME/.m2:/root/.m2') {
+                                            sh 'mvn clean compile -DskipTests'
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
+                    stage('Test ${SERVICE}') {
+                        steps {
+                            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                                timeout(time: env.TEST_TIMEOUT.toInteger(), unit: 'MINUTES') {
+                                    dir("${SERVICE}") {
+                                        script {
+                                            docker.image(env.MAVEN_IMAGE).inside('-v $HOME/.m2:/root/.m2') {
+                                                sh 'mvn test'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     stage('Package ${SERVICE}') {
                         steps {
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                 dir("${SERVICE}") {
-                                    sh 'mvn package -DskipTests' 
+                                    script {
+                                        docker.image(env.MAVEN_IMAGE).inside('-v $HOME/.m2:/root/.m2') {
+                                            sh 'mvn package -DskipTests'
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -89,6 +97,7 @@ pipeline {
                             }
                         }
                     }
+
                     stage('Push Docker ${SERVICE}') {
                         steps {
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
@@ -108,17 +117,14 @@ pipeline {
             steps {
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                     timeout(time: env.DEPLOY_TIMEOUT.toInteger(), unit: 'MINUTES') {
-                        script {
-                            sh """
-                                docker-compose down -v
-                                docker-compose up -d
-                                sleep 60
-                                docker-compose ps
-                                echo "Testing API Gateway health check..."
-                                curl -f http://localhost:8080/actuator/health || echo "Health check failed"
-                                docker-compose logs --tail=50
-                            """
-                        }
+                        sh """
+                            docker-compose down -v || true
+                            docker-compose up -d
+                            sleep 60
+                            docker-compose ps
+                            curl -f http://localhost:8080/actuator/health || echo "Health check failed"
+                            docker-compose logs --tail=50
+                        """
                     }
                 }
             }
@@ -127,14 +133,11 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    script {
-                        sh """
-                            echo "Running integration tests..."
-                            # Add your integration test commands here
-                            # For example: mvn test -Dtest=IntegrationTest
-                            echo "Integration tests completed"
-                        """
-                    }
+                    sh '''
+                        echo "Running integration tests..."
+                        # mvn test -Dtest=IntegrationTest
+                        echo "Integration tests completed"
+                    '''
                 }
             }
         }
@@ -142,51 +145,23 @@ pipeline {
 
     post {
         always {
+            sh '''
+                docker-compose down -v || true
+                docker system prune -f || true
+            '''
+            cleanWs()
             script {
-                sh '''
-                    docker-compose down -v || true
-                    docker system prune -f || true
-                '''
-                cleanWs()
-                def buildStatus = currentBuild.currentResult
-                def subject = "Jenkins Build ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-                def body = """
-                    Build Status: ${buildStatus}
-                    Job: ${env.JOB_NAME}
-                    Build Number: ${env.BUILD_NUMBER}
-                    Build URL: ${env.BUILD_URL}
-
-                    Changes:
-                    ${currentBuild.changeSets}
-
-                    Console Output:
-                    ${env.BUILD_URL}console
-                """
-                echo "Build completed with status: ${buildStatus}"
-                echo "Sending notification..."
+                echo "Build completed with status: ${currentBuild.currentResult}"
             }
         }
         success {
             echo 'Pipeline succeeded! Services are running locally.'
-            script {
-                echo "Build #${env.BUILD_NUMBER} completed successfully!"
-                echo "Services deployed and tested."
-            }
         }
         failure {
-            echo 'Pipeline failed!'
-            script {
-                sh 'docker-compose logs || true'
-                echo "❌ Build #${env.BUILD_NUMBER} failed!"
-                echo "🔍 Check the logs above for details."
-            }
+            echo 'Pipeline failed! Check logs above.'
         }
         unstable {
             echo 'Pipeline completed with test failures.'
-            script {
-                echo "Build #${env.BUILD_NUMBER} completed with warnings!"
-                echo "Some tests may have failed, but deployment succeeded."
-            }
         }
     }
 }
