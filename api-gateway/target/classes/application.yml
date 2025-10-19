@@ -36,6 +36,8 @@ spring:
             - Path=/api/bookings/**
           filters:
             - StripPrefix=1
+      default-filters:
+        - AddRequestHeader=Authorization, Bearer #{T(java.util.Optional).ofNullable(T(org.springframework.web.server.ServerWebExchange).currentRequest().getHeaders().getFirst('Authorization')).orElse('')}
 
 eureka:
   client:

@@ -34,7 +34,6 @@ public class AuthService {
     }
 
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
-        // Authenticate using AuthenticationManager
         var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -42,11 +41,10 @@ public class AuthService {
                 )
         );
 
-        // Get user details
+
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Generate JWT with user details including role
         String token = jwtUtil.generateToken(
                 user.getUsername(),
                 user.getId(),
@@ -62,7 +60,6 @@ public class AuthService {
             throw new RuntimeException("Username already taken");
         }
 
-        // Create new user
         User user = new User();
         user.setFullName(registerRequest.getFullName());
         user.setUsername(registerRequest.getUsername());
@@ -77,19 +74,15 @@ public class AuthService {
 
     public com.ticketing.authservice.DTO.UserDTO validateToken(String token) {
         try {
-            // Extract username from token
             String username = jwtUtil.getUsernameFromToken(token);
 
-            // Validate token
             if (!jwtUtil.validateToken(token)) {
                 throw new RuntimeException("Invalid token");
             }
 
-            // Get user from database
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Convert to DTO
             com.ticketing.authservice.DTO.UserDTO userDTO = new com.ticketing.authservice.DTO.UserDTO();
             userDTO.setId(user.getId());
             userDTO.setUsername(user.getUsername());

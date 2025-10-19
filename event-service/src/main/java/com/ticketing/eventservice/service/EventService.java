@@ -29,7 +29,6 @@ public class EventService {
     public EventDTO createEvent(EventCreateDTO createDTO) {
         log.info("Creating new event: {}", createDTO.getName());
 
-        // Validate organizer exists
         Boolean userExists = authServiceClient.validateUser(createDTO.getOrganizerId());
         if (!userExists) {
             throw new IllegalArgumentException("Organizer with ID " + createDTO.getOrganizerId() + " does not exist");

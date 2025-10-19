@@ -38,7 +38,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         try {
             String path = request.getServletPath();
 
-            // 🔹 Skip JWT validation for public endpoints
             if (EXCLUDED_PATHS.stream().anyMatch(path::startsWith)) {
                 filterChain.doFilter(request, response);
                 return;
