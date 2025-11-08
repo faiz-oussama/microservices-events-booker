@@ -1,0 +1,3 @@
+com\ticketing\apigateway\utils\JwtUtil.class
+com\ticketing\apigateway\filter\JwtAuthenticationFilter.class
+com\ticketing\apigateway\ApiGatewayApplication.class

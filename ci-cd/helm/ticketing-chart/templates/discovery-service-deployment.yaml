@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: discovery-service
+    version: v1
+spec:
+  replicas: {{ .Values.discoveryService.replicas }}
+  selector:
+    matchLabels:
+      app: discovery-service
+  template:
+    metadata:
+      labels:
+        app: discovery-service
+        version: v1
+    spec:
+      imagePullSecrets:
+      - name: {{ .Values.global.imagePullSecret }}
+      containers:
+      - name: discovery-service
+        image: "{{ .Values.global.image.registry }}/{{ .Values.discoveryService.image.repository }}:{{ .Values.global.image.tag }}"
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8761
+          protocol: TCP
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: {{ .Values.environment }}
+        - name: SERVER_PORT
+          value: "8761"
+        resources:
+          requests:
+            memory: {{ .Values.discoveryService.resources.requests.memory }}
+            cpu: {{ .Values.discoveryService.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.discoveryService.resources.limits.memory }}
+            cpu: {{ .Values.discoveryService.resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: discovery-service
+spec:
+  type: {{ .Values.discoveryService.service.type }}
+  selector:
+    app: discovery-service
+  ports:
+  - name: http
+    port: {{ .Values.discoveryService.service.port }}
+    targetPort: http
+    protocol: TCP

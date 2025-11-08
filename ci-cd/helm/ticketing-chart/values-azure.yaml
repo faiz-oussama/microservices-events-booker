@@ -1,0 +1,96 @@
+# Azure Production Values
+environment: prod
+
+# Global settings
+global:
+  image:
+    registry: ticketingcr.azurecr.io
+    pullPolicy: IfNotPresent
+  imagePullSecret: ticketing-acr-secret
+
+# Discovery Service
+discoveryService:
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# API Gateway
+apiGateway:
+  replicas: 2
+  service:
+    type: LoadBalancer
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Auth Service
+authService:
+  replicas: 2
+  database:
+    url: "jdbc:postgresql://ticketing-auth-db.postgres.database.azure.com:5432/authdb"
+    username: "dbadmin@ticketing-auth-db"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Ticket Service
+ticketService:
+  replicas: 2
+  database:
+    url: "jdbc:postgresql://ticketing-ticket-db.postgres.database.azure.com:5432/ticketdb"
+    username: "dbadmin@ticketing-ticket-db"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Event Service
+eventService:
+  replicas: 2
+  database:
+    url: "jdbc:postgresql://ticketing-event-db.postgres.database.azure.com:5432/eventdb"
+    username: "dbadmin@ticketing-event-db"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Booking Service
+bookingService:
+  replicas: 2
+  database:
+    url: "jdbc:postgresql://ticketing-booking-db.postgres.database.azure.com:5432/bookingdb"
+    username: "dbadmin@ticketing-booking-db"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
